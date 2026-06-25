@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Study Assistant</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">🎓 <span>StudyAI</span></div>
+      <nav>
+        <a href="#features">Features</a>
+        <a href="#app" class="nav-cta">Try Now</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">✦ Powered by AI</div>
+    <h1>Study Smarter,<br /><span class="gradient-text">Not Harder</span></h1>
+    <p class="hero-sub">Explain any topic, generate quizzes, summarize your notes,<br />and chat with an AI tutor — all in one place.</p>
+    <a href="#app" class="hero-btn">Start Studying →</a>
+    <div class="hero-stats">
+      <div><strong>4</strong><span>Tools</span></div>
+      <div class="divider"></div>
+      <div><strong>∞</strong><span>Topics</span></div>
+      <div class="divider"></div>
+      <div><strong>Free</strong><span>To Use</span></div>
+    </div>
+  </section>
+
+  <!-- FEATURES STRIP -->
+  <section class="features" id="features">
+    <div class="feature-card">
+      <div class="feat-icon">📚</div>
+      <h3>Explain Topics</h3>
+      <p>Get simple, analogy-driven explanations for any concept instantly.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feat-icon">📝</div>
+      <h3>Quiz Generator</h3>
+      <p>Auto-generate 5 MCQ questions to test yourself on any subject.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feat-icon">📋</div>
+      <h3>Notes Summarizer</h3>
+      <p>Paste your notes and get a clean 5-point revision summary.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feat-icon">💬</div>
+      <h3>AI Chat Tutor</h3>
+      <p>Ask follow-up questions and get answers with full memory context.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feat-icon">📄</div>
+      <h3>PDF Summarizer</h3>
+      <p>Upload a PDF and extract the key points automatically.</p>
+    </div>
+  </section>
+
+  <!-- MAIN APP -->
+  <section class="app-section" id="app">
+
+    <!-- API KEY BANNER -->
+    <div class="api-banner" id="apiBanner">
+      <div class="api-banner-inner">
+        <span>🔑</span>
+        <div>
+          <strong>Enter your Hugging Face API Token to get started</strong>
+          <p>Get one free at <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a> — it's never stored on any server.</p>
+        </div>
+        <div class="token-row">
+          <input type="password" id="tokenInput" placeholder="hf_..." />
+          <button onclick="saveToken()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-card">
+      <!-- TAB BAR -->
+      <div class="tab-bar">
+        <button class="tab active" data-tab="explain" onclick="switchTab('explain', this)">📚 Explain</button>
+        <button class="tab" data-tab="quiz" onclick="switchTab('quiz', this)">📝 Quiz</button>
+        <button class="tab" data-tab="summarize" onclick="switchTab('summarize', this)">📋 Summarize</button>
+        <button class="tab" data-tab="chat" onclick="switchTab('chat', this)">💬 Chat</button>
+        <button class="tab" data-tab="pdf" onclick="switchTab('pdf', this)">📄 PDF</button>
+      </div>
+
+      <!-- TAB: EXPLAIN -->
+      <div class="tab-content active" id="tab-explain">
+        <label class="input-label">Topic or Question</label>
+        <textarea id="explainInput" placeholder="e.g. What is machine learning? / Explain recursion / What is photosynthesis?" rows="3"></textarea>
+        <button class="action-btn" onclick="runExplain()">Explain it to me 🚀</button>
+        <div class="result-box" id="explainResult"></div>
+      </div>
+
+      <!-- TAB: QUIZ -->
+      <div class="tab-content" id="tab-quiz">
+        <label class="input-label">Topic for Quiz</label>
+        <textarea id="quizInput" placeholder="e.g. Python programming / World War 2 / Data Structures" rows="3"></textarea>
+        <button class="action-btn" onclick="runQuiz()">Generate Quiz 🎯</button>
+        <div class="result-box" id="quizResult"></div>
+      </div>
+
+      <!-- TAB: SUMMARIZE -->
+      <div class="tab-content" id="tab-summarize">
+        <label class="input-label">Paste Your Notes</label>
+        <textarea id="summarizeInput" placeholder="Paste your notes here..." rows="7"></textarea>
+        <button class="action-btn" onclick="runSummarize()">Summarize ✨</button>
+        <div class="result-box" id="summarizeResult"></div>
+      </div>
+
+      <!-- TAB: CHAT -->
+      <div class="tab-content" id="tab-chat">
+        <div class="chat-window" id="chatWindow">
+          <div class="chat-msg ai">
+            <div class="chat-bubble">Hi! I'm your AI study tutor. Ask me anything — I remember our whole conversation. 👋</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <textarea id="chatInput" placeholder="Ask a question..." rows="2" onkeydown="chatEnter(event)"></textarea>
+          <button class="send-btn" onclick="runChat()">➤</button>
+        </div>
+        <button class="clear-btn" onclick="clearChat()">Clear Chat</button>
+      </div>
+
+      <!-- TAB: PDF -->
+      <div class="tab-content" id="tab-pdf">
+        <label class="input-label">Upload a PDF</label>
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('pdfFile').click()" ondragover="dragOver(event)" ondrop="dropFile(event)">
+          <div class="drop-icon">📄</div>
+          <p>Click to upload or drag & drop a PDF</p>
+          <span id="fileName">No file selected</span>
+        </div>
+        <input type="file" id="pdfFile" accept=".pdf" style="display:none" onchange="handleFile(event)" />
+        <button class="action-btn" onclick="runPDF()" id="pdfBtn" disabled>Summarize PDF 📄</button>
+        <div class="result-box" id="pdfResult"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>Built by <strong>Divyansh Singh</strong> · <a href="https://github.com/DivyanshSingh9073/Al-Study-Assistant-.git" target="_blank">GitHub</a></p>
+    <p class="footer-sub">Your token is used only in your browser and never sent to any server other than Hugging Face.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
