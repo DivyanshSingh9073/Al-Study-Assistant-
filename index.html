@@ -79,6 +79,11 @@
           <input type="password" id="tokenInput" placeholder="hf_..." />
           <button onclick="saveToken()">Save</button>
         </div>
+        <p id="tokenStatus" style="font-size:0.8rem;margin-top:6px;color:#059669;"></p>
+        <p style="font-size:0.78rem;margin-top:8px;color:#92400e;">
+          ⚠️ <strong>Must be served via a web server</strong> — opening index.html directly as a file will cause a "Failed to fetch" error.<br/>
+          Run locally with: <code style="background:#fef3c7;padding:2px 6px;border-radius:4px;">npx serve .</code> or <code style="background:#fef3c7;padding:2px 6px;border-radius:4px;">python -m http.server 8080</code>
+        </p>
       </div>
     </div>
 
@@ -110,6 +115,51 @@
 
       <!-- TAB: SUMMARIZE -->
       <div class="tab-content" id="tab-summarize">
+        <label class="input-label">Paste Your Notes</label>
+        <textarea id="summarizeInput" placeholder="Paste your notes here..." rows="7"></textarea>
+        <button class="action-btn" onclick="runSummarize()">Summarize ✨</button>
+        <div class="result-box" id="summarizeResult"></div>
+      </div>
+
+      <!-- TAB: CHAT -->
+      <div class="tab-content" id="tab-chat">
+        <div class="chat-window" id="chatWindow">
+          <div class="chat-msg ai">
+            <div class="chat-bubble">Hi! I'm your AI study tutor. Ask me anything — I remember our whole conversation. 👋</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <textarea id="chatInput" placeholder="Ask a question..." rows="2" onkeydown="chatEnter(event)"></textarea>
+          <button class="send-btn" onclick="runChat()">➤</button>
+        </div>
+        <button class="clear-btn" onclick="clearChat()">Clear Chat</button>
+      </div>
+
+      <!-- TAB: PDF -->
+      <div class="tab-content" id="tab-pdf">
+        <label class="input-label">Upload a PDF</label>
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('pdfFile').click()" ondragover="dragOver(event)" ondrop="dropFile(event)">
+          <div class="drop-icon">📄</div>
+          <p>Click to upload or drag & drop a PDF</p>
+          <span id="fileName">No file selected</span>
+        </div>
+        <input type="file" id="pdfFile" accept=".pdf" style="display:none" onchange="handleFile(event)" />
+        <button class="action-btn" onclick="runPDF()" id="pdfBtn" disabled>Summarize PDF 📄</button>
+        <div class="result-box" id="pdfResult"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>Built by <strong>Divyansh Singh</strong> · <a href="https://github.com/DivyanshSingh9073/Al-Study-Assistant-.git" target="_blank">GitHub</a></p>
+    <p class="footer-sub">Your token is used only in your browser and never sent to any server other than Hugging Face.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>      <div class="tab-content" id="tab-summarize">
         <label class="input-label">Paste Your Notes</label>
         <textarea id="summarizeInput" placeholder="Paste your notes here..." rows="7"></textarea>
         <button class="action-btn" onclick="runSummarize()">Summarize ✨</button>
