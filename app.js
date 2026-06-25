@@ -1,99 +1,127 @@
 // =============================================
-// CONFIG
+// CONFIG — uses HF Inference API (CORS-enabled)
+// Model: zephyr-7b-beta (reliable, fast, free)
 // =============================================
-const API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
+const HF_MODEL = "HuggingFaceH4/zephyr-7b-beta";
+const API_URL  = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
 
 // =============================================
-// TOKEN MANAGEMENT (sessionStorage — never sent to any server)
+// TOKEN MANAGEMENT
 // =============================================
 function saveToken() {
   const val = document.getElementById("tokenInput").value.trim();
   if (!val.startsWith("hf_")) {
-    alert("That doesn't look like a valid Hugging Face token (should start with hf_)");
+    alert("That doesn't look like a valid HF token (must start with hf_)");
     return;
   }
   sessionStorage.setItem("hf_token", val);
   document.getElementById("apiBanner").classList.add("hidden");
+  document.getElementById("tokenStatus").textContent = "✅ Token saved for this session";
 }
 
 function getToken() {
   return sessionStorage.getItem("hf_token") || "";
 }
 
-// Check on load — hide banner if token already saved this session
 window.addEventListener("load", () => {
   if (getToken()) document.getElementById("apiBanner").classList.add("hidden");
 });
 
 // =============================================
-// HF API CALL
+// CORE API CALL
 // =============================================
-async function queryHF(prompt) {
+async function queryHF(userPrompt) {
   const token = getToken();
   if (!token) {
     document.getElementById("apiBanner").classList.remove("hidden");
-    throw new Error("Please enter your Hugging Face API token above first.");
+    throw new Error("Enter your Hugging Face token in the banner above first.");
   }
 
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      inputs: prompt,
-      parameters: {
-        max_new_tokens: 600,
-        temperature: 0.7,
-        return_full_text: false,
+  // Zephyr uses <|system|> / <|user|> / <|assistant|> chat template
+  const formatted =
+    `<|system|>\nYou are a helpful AI study assistant for students.\n</s>\n` +
+    `<|user|>\n${userPrompt}\n</s>\n` +
+    `<|assistant|>\n`;
+
+  let response;
+  try {
+    response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
-    }),
-  });
-
-  if (response.status === 503) {
-    throw new Error("Model is loading on Hugging Face servers. Please wait 20 seconds and try again.");
+      body: JSON.stringify({
+        inputs: formatted,
+        parameters: {
+          max_new_tokens: 512,
+          temperature: 0.7,
+          return_full_text: false,
+          stop: ["</s>", "<|user|>"],
+        },
+      }),
+    });
+  } catch (networkErr) {
+    throw new Error(
+      "Network error — check your internet connection. " +
+      "If opening index.html directly as a file, use a local server instead:\n" +
+      "  npx serve .   or   python -m http.server 8080"
+    );
   }
+
   if (response.status === 401) {
     sessionStorage.removeItem("hf_token");
     document.getElementById("apiBanner").classList.remove("hidden");
-    throw new Error("Invalid token. Please re-enter your Hugging Face API token.");
+    throw new Error("Invalid token — please re-enter your Hugging Face API token.");
+  }
+  if (response.status === 503) {
+    throw new Error("Model is warming up on HF servers. Wait 20 seconds and try again.");
+  }
+  if (response.status === 429) {
+    throw new Error("Rate limit hit. Wait a minute then try again (free tier limit).");
   }
   if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData?.error || `API error ${response.status}`);
+    const body = await response.text();
+    throw new Error(`HF API error ${response.status}: ${body.slice(0, 200)}`);
   }
 
   const data = await response.json();
-  if (Array.isArray(data) && data[0]?.generated_text) return data[0].generated_text;
-  if (data?.generated_text) return data.generated_text;
-  throw new Error("Unexpected response format from Hugging Face.");
+
+  // Handle both array and object response shapes
+  const raw =
+    (Array.isArray(data) ? data[0]?.generated_text : data?.generated_text) || "";
+
+  if (!raw.trim()) throw new Error("Got an empty response — the model may be overloaded. Try again.");
+  return raw.trim();
 }
 
 // =============================================
 // UI HELPERS
 // =============================================
 function showLoading(boxId) {
-  document.getElementById(boxId).innerHTML = `
-    <div class="result-loading">
-      <div class="spinner"></div> Thinking…
-    </div>`;
+  document.getElementById(boxId).innerHTML =
+    `<div class="result-loading"><div class="spinner"></div> Thinking…</div>`;
 }
 
 function showResult(boxId, text) {
-  document.getElementById(boxId).innerHTML = `<div class="result-inner">${escapeHtml(text).trim()}</div>`;
+  document.getElementById(boxId).innerHTML =
+    `<div class="result-inner">${escapeHtml(text)}</div>`;
 }
 
 function showError(boxId, msg) {
-  document.getElementById(boxId).innerHTML = `<div class="result-error">⚠️ ${escapeHtml(msg)}</div>`;
+  document.getElementById(boxId).innerHTML =
+    `<div class="result-error">⚠️ ${escapeHtml(msg)}</div>`;
 }
 
 function escapeHtml(str) {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
-function setBtn(id, loading) {
-  const btn = document.querySelector(`#tab-${id} .action-btn`);
+function setBtn(tabId, loading) {
+  const btn = document.querySelector(`#tab-${tabId} .action-btn`);
   if (btn) btn.disabled = loading;
 }
 
@@ -115,15 +143,11 @@ async function runExplain() {
   if (!topic) return;
   setBtn("explain", true);
   showLoading("explainResult");
-
-  const prompt = `[INST] You are a helpful study assistant for students.
-Explain the following topic in simple, easy-to-understand language.
-Use an analogy if possible. Keep it under 200 words.
-
-Topic: ${topic} [/INST]`;
-
   try {
-    const result = await queryHF(prompt);
+    const result = await queryHF(
+      `Explain "${topic}" in simple, easy-to-understand language for a student. ` +
+      `Use an analogy if helpful. Keep it under 200 words.`
+    );
     showResult("explainResult", result);
   } catch (e) {
     showError("explainResult", e.message);
@@ -140,21 +164,12 @@ async function runQuiz() {
   if (!topic) return;
   setBtn("quiz", true);
   showLoading("quizResult");
-
-  const prompt = `[INST] You are a study assistant. Generate exactly 5 multiple choice questions about: ${topic}
-
-Format each question exactly like this:
-Q1. [Question]
-A) option
-B) option
-C) option
-D) option
-Answer: [correct letter]
-
-Keep questions educational and clear. [/INST]`;
-
   try {
-    const result = await queryHF(prompt);
+    const result = await queryHF(
+      `Generate exactly 5 multiple choice questions about: ${topic}\n\n` +
+      `Format each like:\nQ1. [question]\nA) ...\nB) ...\nC) ...\nD) ...\nAnswer: [letter]\n\n` +
+      `Keep it educational and clear.`
+    );
     showResult("quizResult", result);
   } catch (e) {
     showError("quizResult", e.message);
@@ -171,14 +186,11 @@ async function runSummarize() {
   if (!notes) return;
   setBtn("summarize", true);
   showLoading("summarizeResult");
-
-  const prompt = `[INST] You are a study assistant. Summarize these notes into 5 clear bullet points for easy revision.
-Be concise and highlight the most important ideas.
-
-Notes: ${notes} [/INST]`;
-
   try {
-    const result = await queryHF(prompt);
+    const result = await queryHF(
+      `Summarize these student notes into 5 clear bullet points for easy revision. ` +
+      `Be concise.\n\nNotes:\n${notes}`
+    );
     showResult("summarizeResult", result);
   } catch (e) {
     showError("summarizeResult", e.message);
@@ -204,8 +216,8 @@ function appendChat(role, text) {
 function appendChatLoading() {
   const win = document.getElementById("chatWindow");
   const div = document.createElement("div");
-  div.className = "chat-msg ai";
   div.id = "chatThinking";
+  div.className = "chat-msg ai";
   div.innerHTML = `<div class="chat-bubble"><div class="result-loading" style="padding:0"><div class="spinner"></div> Thinking…</div></div>`;
   win.appendChild(div);
   win.scrollTop = win.scrollHeight;
@@ -219,29 +231,27 @@ function removeChatLoading() {
 async function runChat() {
   const input = document.getElementById("chatInput").value.trim();
   if (!input) return;
-
   document.getElementById("chatInput").value = "";
   appendChat("user", input);
   chatHistory.push({ role: "user", text: input });
-
   appendChatLoading();
   document.querySelector(".send-btn").disabled = true;
 
-  // Build context from history (last 8 turns to stay within token limits)
-  const recentHistory = chatHistory.slice(-8);
-  const contextStr = recentHistory.slice(0, -1)
-    .map(m => m.role === "user" ? `Student: ${m.text}` : `Tutor: ${m.text}`)
-    .join("\n");
+  // Build context string from last 6 turns
+  const recent = chatHistory.slice(-7, -1);
+  const ctx = recent.map(m =>
+    m.role === "user" ? `Student: ${m.text}` : `Tutor: ${m.text}`
+  ).join("\n");
 
-  const prompt = `[INST] You are a helpful, encouraging AI study tutor. Answer the student's question clearly and concisely.
-${contextStr ? `\nConversation so far:\n${contextStr}\n` : ""}
-Student: ${input} [/INST]`;
+  const fullPrompt =
+    (ctx ? `Previous conversation:\n${ctx}\n\n` : "") +
+    `Student question: ${input}\n\nAnswer clearly and helpfully as a study tutor.`;
 
   try {
-    const result = await queryHF(prompt);
+    const result = await queryHF(fullPrompt);
     removeChatLoading();
-    appendChat("ai", result.trim());
-    chatHistory.push({ role: "ai", text: result.trim() });
+    appendChat("ai", result);
+    chatHistory.push({ role: "ai", text: result });
   } catch (e) {
     removeChatLoading();
     appendChat("ai", `⚠️ ${e.message}`);
@@ -259,8 +269,8 @@ function chatEnter(e) {
 
 function clearChat() {
   chatHistory = [];
-  const win = document.getElementById("chatWindow");
-  win.innerHTML = `<div class="chat-msg ai"><div class="chat-bubble">Hi! I'm your AI study tutor. Ask me anything — I remember our whole conversation. 👋</div></div>`;
+  document.getElementById("chatWindow").innerHTML =
+    `<div class="chat-msg ai"><div class="chat-bubble">Hi! I'm your AI study tutor. Ask me anything 👋</div></div>`;
 }
 
 // =============================================
@@ -291,36 +301,34 @@ function processPDFFile(file) {
     return;
   }
   document.getElementById("fileName").textContent = `📎 ${file.name}`;
+  showLoading("pdfResult");
 
   const reader = new FileReader();
-  reader.onload = async function (e) {
+  reader.onload = async (e) => {
     try {
-      // Load PDF.js from CDN to extract text
       if (!window.pdfjsLib) {
         await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
         window.pdfjsLib.GlobalWorkerOptions.workerSrc =
           "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
       }
-
       const typedArray = new Uint8Array(e.target.result);
       const pdf = await pdfjsLib.getDocument(typedArray).promise;
-
       let fullText = "";
-      const maxPages = Math.min(pdf.numPages, 10); // cap at 10 pages
+      const maxPages = Math.min(pdf.numPages, 8);
       for (let i = 1; i <= maxPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
         fullText += content.items.map(item => item.str).join(" ") + "\n";
       }
-
       pdfText = fullText.trim();
       if (!pdfText) {
-        showError("pdfResult", "Could not extract text from this PDF. It may be a scanned image-only PDF.");
+        showError("pdfResult", "No text found — this may be a scanned/image PDF.");
         return;
       }
-
       document.getElementById("pdfBtn").disabled = false;
-      document.getElementById("pdfResult").innerHTML = `<div class="result-inner" style="font-size:0.82rem;color:#6b6882">✅ PDF loaded (${pdf.numPages} pages). Click "Summarize PDF" to continue.</div>`;
+      document.getElementById("pdfResult").innerHTML =
+        `<div class="result-inner" style="font-size:0.82rem;color:#6b6882">` +
+        `✅ Loaded ${pdf.numPages} page(s). Click "Summarize PDF" to continue.</div>`;
     } catch (err) {
       showError("pdfResult", "Failed to read PDF: " + err.message);
     }
@@ -332,20 +340,12 @@ async function runPDF() {
   if (!pdfText) return;
   document.getElementById("pdfBtn").disabled = true;
   showLoading("pdfResult");
-
-  // Trim text to ~2000 chars to stay within token limits
-  const trimmed = pdfText.slice(0, 2000);
-
-  const prompt = `[INST] You are a study assistant. Summarize the following document content into:
-1. A 2-sentence overview
-2. 5 key bullet points students should know
-
-Document:
-${trimmed}
-[/INST]`;
-
+  const trimmed = pdfText.slice(0, 1800);
   try {
-    const result = await queryHF(prompt);
+    const result = await queryHF(
+      `Summarize this document for a student:\n1. Write a 2-sentence overview.\n` +
+      `2. List 5 key bullet points to remember.\n\nDocument:\n${trimmed}`
+    );
     showResult("pdfResult", result);
   } catch (e) {
     showError("pdfResult", e.message);
@@ -359,7 +359,7 @@ function loadScript(src) {
     const s = document.createElement("script");
     s.src = src;
     s.onload = resolve;
-    s.onerror = reject;
+    s.onerror = () => reject(new Error("Failed to load PDF.js"));
     document.head.appendChild(s);
   });
 }
