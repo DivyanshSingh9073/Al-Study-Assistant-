@@ -226,12 +226,21 @@
 window._key = "";
 
 function saveKey() {
-  const v = document.getElementById("keyInput").value.trim();
-  const st = document.getElementById("keyStatus");
-  if (!v || v.length < 8) {
-    st.textContent = "❌ Please paste your full API key";
-    st.style.color = "#b91c1c"; return;
+  alert("Button clicked!");
+
+  const key = document.getElementById("keyInput").value.trim();
+
+  alert(key);
+
+  if (!key) {
+    alert("No key entered");
+    return;
   }
+
+  localStorage.setItem("openrouter_key", key);
+
+  alert("Saved!");
+}
   window._key = v;
   try { sessionStorage.setItem("or_key", v); } catch(e) {}
   document.getElementById("keyBanner").style.display = "none";
