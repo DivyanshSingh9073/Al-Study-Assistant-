@@ -46,8 +46,8 @@
 
     .key-banner { background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 14px; padding: 18px 20px; margin-bottom: 22px; }
     .key-banner strong { font-size: 0.92rem; color: #92400e; display: block; margin-bottom: 4px; }
-    .key-banner p { font-size: 0.8rem; color: #b45309; margin-bottom: 10px; }
-    .key-banner a { color: var(--accent); }
+    .key-banner p { font-size: 0.8rem; color: #b45309; margin-bottom: 10px; line-height: 1.6; }
+    .key-banner a { color: var(--accent); font-weight: 600; }
     .key-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .key-row input { flex: 1; min-width: 200px; padding: 9px 13px; border: 1.5px solid #fcd34d; border-radius: 8px; font-size: 0.85rem; background: #fff; outline: none; font-family: monospace; }
     .key-row input:focus { border-color: var(--accent); }
@@ -124,7 +124,7 @@
 </header>
 
 <section class="hero">
-  <div class="hero-badge">✦ Powered by Google Gemini</div>
+  <div class="hero-badge">✦ Powered by OpenRouter AI</div>
   <h1>Study Smarter,<br /><span class="grad">Not Harder</span></h1>
   <p>Explain topics, generate quizzes, summarize notes,<br />and chat with an AI tutor — all in one place.</p>
   <a href="#app" class="hero-btn">Start Studying →</a>
@@ -148,10 +148,14 @@
 <section class="app-section" id="app">
 
   <div class="key-banner" id="keyBanner">
-    <strong>🔑 Enter your Google Gemini API Key to get started</strong>
-    <p>Get one free at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> — 100% free, no credit card needed. Stored only in your browser.</p>
+    <strong>🔑 Enter your OpenRouter API Key</strong>
+    <p>
+      1. Go to <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a> → Sign up free → Create Key<br/>
+      2. Paste your key below — starts with <code>sk-or-</code><br/>
+      3. Free models are available with no credit card needed
+    </p>
     <div class="key-row">
-      <input type="password" id="keyInput" placeholder="AIza..." onkeydown="if(event.key==='Enter') saveKey()" />
+      <input type="password" id="keyInput" placeholder="sk-or-v1-..." onkeydown="if(event.key==='Enter') saveKey()" />
       <button onclick="saveKey()">Save &amp; Start</button>
     </div>
     <div id="keyStatus"></div>
@@ -214,34 +218,30 @@
 
 <footer>
   <p>Built by <strong>Divyansh Singh</strong> · <a href="https://github.com/DivyanshSingh9073/Al-Study-Assistant-.git" target="_blank">GitHub ↗</a></p>
-  <p class="fsub">Your API key is sent only to Google — never stored on any server.</p>
+  <p class="fsub">Your API key is sent only to OpenRouter — never stored on any server.</p>
 </footer>
 
 <script>
-// ─── KEY MANAGEMENT ──────────────────────────────────────
+// ─── KEY ─────────────────────────────────────────────────
 window._key = "";
 
 function saveKey() {
   const v = document.getElementById("keyInput").value.trim();
   const st = document.getElementById("keyStatus");
-  const banner = document.getElementById("keyBanner");
-
   if (!v || v.length < 8) {
     st.textContent = "❌ Please paste your full API key";
-    st.style.color = "#b91c1c";
-    return;
+    st.style.color = "#b91c1c"; return;
   }
-
   window._key = v;
-  try { sessionStorage.setItem("gemini_key", v); } catch(e) {}
-  banner.style.display = "none";
+  try { sessionStorage.setItem("or_key", v); } catch(e) {}
+  document.getElementById("keyBanner").style.display = "none";
   st.textContent = "✅ Key saved!";
   st.style.color = "#059669";
 }
 
 function getKey() {
   if (window._key) return window._key;
-  try { return sessionStorage.getItem("gemini_key") || ""; } catch(e) { return ""; }
+  try { return sessionStorage.getItem("or_key") || ""; } catch(e) { return ""; }
 }
 
 window.addEventListener("load", () => {
@@ -249,44 +249,46 @@ window.addEventListener("load", () => {
   if (k) { window._key = k; document.getElementById("keyBanner").style.display = "none"; }
 });
 
-// ─── GEMINI API (supports browser calls natively) ────────
+// ─── OPENROUTER API ──────────────────────────────────────
+// Uses mistralai/mistral-7b-instruct — completely free on OpenRouter
 async function ask(prompt) {
   const key = getKey();
   if (!key) {
     document.getElementById("keyBanner").style.display = "block";
-    throw new Error("Please enter your Gemini API key above.");
+    throw new Error("Please enter your OpenRouter API key above.");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
-
-  const res = await fetch(url, {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Authorization": `Bearer ${key}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": window.location.href,
+      "X-Title": "AI Study Assistant"
+    },
     body: JSON.stringify({
-      contents: [{
-        parts: [{ text: "You are a helpful AI study assistant for students. Be clear, concise and friendly.\n\n" + prompt }]
-      }],
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.7 }
+      model: "mistralai/mistral-7b-instruct:free",
+      max_tokens: 1024,
+      messages: [
+        { role: "system", content: "You are a helpful AI study assistant for students. Be clear, concise and friendly." },
+        { role: "user", content: prompt }
+      ]
     })
   });
 
-  if (res.status === 400) { const t = await res.json(); throw new Error("Bad request: " + (t?.error?.message || "check your key")); }
-  if (res.status === 403) {
+  if (res.status === 401) {
     window._key = "";
-    try { sessionStorage.removeItem("gemini_key"); } catch(e) {}
+    try { sessionStorage.removeItem("or_key"); } catch(e) {}
     document.getElementById("keyBanner").style.display = "block";
-    throw new Error("Invalid API key — please re-enter.");
+    throw new Error("Invalid API key — please re-enter your OpenRouter key.");
   }
-if (!res.ok) {
-  const error = await res.json();
-  console.log(error);
-  alert(JSON.stringify(error, null, 2));
-  throw new Error(error.error.message);
-}
+  if (res.status === 429) throw new Error("Rate limit reached. Wait a moment and try again.");
   if (!res.ok) { const t = await res.text(); throw new Error(`API error ${res.status}: ${t.slice(0,150)}`); }
 
   const data = await res.json();
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+  const text = data?.choices?.[0]?.message?.content?.trim();
+  if (!text) throw new Error("Empty response — try again.");
+  return text;
 }
 
 // ─── UI HELPERS ──────────────────────────────────────────
@@ -345,89 +347,4 @@ function addMsg(role, text) {
 
 function addThinking() {
   const w = document.getElementById("chatWin");
-  const d = document.createElement("div");
-  d.id = "thinking"; d.className = "cm ai";
-  d.innerHTML = `<div class="cb"><div class="rl" style="padding:0"><div class="sp"></div>Thinking…</div></div>`;
-  w.appendChild(d); w.scrollTop = w.scrollHeight;
-}
-
-async function runChat() {
-  const inp = document.getElementById("chatInput").value.trim(); if (!inp) return;
-  document.getElementById("chatInput").value = "";
-  addMsg("user", inp); hist.push({ role: "user", text: inp });
-  addThinking();
-  document.querySelector(".sbtn").disabled = true;
-
-  const ctx = hist.slice(-7, -1).map(m =>
-    m.role === "user" ? `Student: ${m.text}` : `Tutor: ${m.text}`
-  ).join("\n");
-
-  try {
-    const ans = await ask((ctx ? `Conversation so far:\n${ctx}\n\n` : "") + `Student: ${inp}\n\nReply as a helpful study tutor.`);
-    document.getElementById("thinking")?.remove();
-    addMsg("ai", ans); hist.push({ role: "ai", text: ans });
-  } catch(e) {
-    document.getElementById("thinking")?.remove();
-    addMsg("ai", "⚠️ " + e.message);
-  } finally { document.querySelector(".sbtn").disabled = false; }
-}
-
-function chatKey(e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runChat(); } }
-
-function clearChat() {
-  hist = [];
-  document.getElementById("chatWin").innerHTML =
-    `<div class="cm ai"><div class="cb">Hi! I'm your AI study tutor. Ask me anything 👋</div></div>`;
-}
-
-// ─── PDF ──────────────────────────────────────────────────
-let pdfText = "";
-
-function dragOver(e) { e.preventDefault(); document.getElementById("dropZone").classList.add("over"); }
-function dropFile(e) { e.preventDefault(); document.getElementById("dropZone").classList.remove("over"); if (e.dataTransfer.files[0]) processPDF(e.dataTransfer.files[0]); }
-function handleFile(e) { if (e.target.files[0]) processPDF(e.target.files[0]); }
-
-function processPDF(file) {
-  if (file.type !== "application/pdf") { alert("Please select a PDF file."); return; }
-  document.getElementById("fileName").textContent = `📎 ${file.name}`;
-  loading("pdfResult");
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    try {
-      if (!window.pdfjsLib) {
-        await new Promise((res, rej) => {
-          const s = document.createElement("script");
-          s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
-          s.onload = res; s.onerror = rej; document.head.appendChild(s);
-        });
-        pdfjsLib.GlobalWorkerOptions.workerSrc =
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-      }
-      const pdf = await pdfjsLib.getDocument(new Uint8Array(e.target.result)).promise;
-      let text = "";
-      for (let i = 1; i <= Math.min(pdf.numPages, 8); i++) {
-        const pg = await pdf.getPage(i);
-        const ct = await pg.getTextContent();
-        text += ct.items.map(x => x.str).join(" ") + "\n";
-      }
-      pdfText = text.trim();
-      if (!pdfText) { err("pdfResult", "No readable text — may be a scanned image PDF."); return; }
-      document.getElementById("pdfBtn").disabled = false;
-      document.getElementById("pdfResult").innerHTML =
-        `<div class="ri" style="font-size:0.8rem;color:#6b6882">✅ Loaded ${pdf.numPages} page(s). Click "Summarize PDF" to continue.</div>`;
-    } catch(e) { err("pdfResult", "PDF error: " + e.message); }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-async function runPDF() {
-  if (!pdfText) return;
-  document.getElementById("pdfBtn").disabled = true; loading("pdfResult");
-  try {
-    result("pdfResult", await ask(`Summarize this document for a student:\n1. Two-sentence overview.\n2. Five key bullet points.\n\nDocument:\n${pdfText.slice(0, 2000)}`));
-  } catch(e) { err("pdfResult", e.message); }
-  finally { document.getElementById("pdfBtn").disabled = false; }
-}
-</script>
-</body>
-</html>
+  const d = document.c
