@@ -46,6 +46,7 @@
 
     .key-banner { background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 14px; padding: 18px 20px; margin-bottom: 22px; }
     .key-banner.hidden { display: none; }
+    .key-banner[style*="display: none"] { display: none !important; }
     .key-banner strong { font-size: 0.92rem; color: #92400e; display: block; margin-bottom: 4px; }
     .key-banner p { font-size: 0.8rem; color: #b45309; margin-bottom: 10px; }
     .key-banner a { color: var(--accent); }
@@ -222,33 +223,50 @@
 <script>
 // ─── API KEY ────────────────────────────────────────────
 function saveKey() {
-  const v = document.getElementById("keyInput").value.trim();
-  if (!v || v.length < 10) {
-    status("❌ Please paste your full API key", "red"); return;
+  const input = document.getElementById("keyInput");
+  const v = input.value.trim();
+  const statusEl = document.getElementById("keyStatus");
+  const banner = document.getElementById("keyBanner");
+
+  statusEl.textContent = "Saving...";
+  statusEl.style.color = "#b45309";
+
+  if (!v || v.length < 5) {
+    statusEl.textContent = "❌ Key is empty or too short — paste your full key";
+    statusEl.style.color = "#b91c1c";
+    return;
   }
-  sessionStorage.setItem("ai_key", v);
-  document.getElementById("keyBanner").classList.add("hidden");
-  status("✅ Key saved!", "green");
+
+  try {
+    sessionStorage.setItem("ai_key", v);
+    const check = sessionStorage.getItem("ai_key");
+    if (check !== v) throw new Error("sessionStorage failed");
+    banner.style.display = "none";
+    statusEl.textContent = "✅ Key saved!";
+    statusEl.style.color = "#059669";
+  } catch(e) {
+    // sessionStorage blocked (private browsing etc) — use a global variable instead
+    window._ai_key = v;
+    banner.style.display = "none";
+    statusEl.textContent = "✅ Key saved (memory mode)!";
+    statusEl.style.color = "#059669";
+  }
 }
 
-function getKey() { return sessionStorage.getItem("ai_key") || ""; }
-
-function status(msg, color) {
-  const el = document.getElementById("keyStatus");
-  el.textContent = msg;
-  el.style.color = color === "red" ? "#b91c1c" : "#059669";
+function getKey() {
+  try { return sessionStorage.getItem("ai_key") || window._ai_key || ""; }
+  catch(e) { return window._ai_key || ""; }
 }
 
 window.addEventListener("load", () => {
-  if (getKey()) document.getElementById("keyBanner").classList.add("hidden");
+  if (getKey()) document.getElementById("keyBanner").style.display = "none";
 });
 
-// ─── OPENAI API ─────────────────────────────────────────
 async function ask(prompt) {
   const key = getKey();
   if (!key) {
-    document.getElementById("keyBanner").classList.remove("hidden");
-    throw new Error("Please enter your OpenAI API key above.");
+    document.getElementById("keyBanner").style.display = "block";
+    throw new Error("Please enter your Groq API key above.");
   }
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -268,8 +286,8 @@ async function ask(prompt) {
   });
 
   if (res.status === 401) {
-    sessionStorage.removeItem("ai_key");
-    document.getElementById("keyBanner").classList.remove("hidden");
+    sessionStorage.removeItem("ai_key"); window._ai_key = "";
+    document.getElementById("keyBanner").style.display = "block";
     throw new Error("Invalid API key — please re-enter.");
   }
   if (res.status === 429) throw new Error("Rate limit reached. Wait a moment and try again.");
@@ -330,19 +348,4 @@ function addMsg(role, text) {
   const d = document.createElement("div");
   d.className = `cm ${role}`;
   d.innerHTML = `<div class="cb">${esc(text)}</div>`;
-  w.appendChild(d); w.scrollTop = w.scrollHeight;
-}
-
-function addThinking() {
-  const w = document.getElementById("chatWin");
-  const d = document.createElement("div");
-  d.id = "thinking"; d.className = "cm ai";
-  d.innerHTML = `<div class="cb"><div class="rl" style="padding:0"><div class="sp"></div>Thinking…</div></div>`;
-  w.appendChild(d); w.scrollTop = w.scrollHeight;
-}
-
-async function runChat() {
-  const inp = document.getElementById("chatInput").value.trim(); if (!inp) return;
-  document.getElementById("chatInput").value = "";
-  addMsg("user", inp); hist.push({ role: "user", text: inp });
-  addTh
+  w.ap
