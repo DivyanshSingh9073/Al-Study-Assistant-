@@ -277,7 +277,12 @@ async function ask(prompt) {
     document.getElementById("keyBanner").style.display = "block";
     throw new Error("Invalid API key — please re-enter.");
   }
-  if (res.status === 429) throw new Error("Rate limit reached. Wait a moment and try again.");
+if (!res.ok) {
+  const error = await res.json();
+  console.log(error);
+  alert(JSON.stringify(error, null, 2));
+  throw new Error(error.error.message);
+}
   if (!res.ok) { const t = await res.text(); throw new Error(`API error ${res.status}: ${t.slice(0,150)}`); }
 
   const data = await res.json();
