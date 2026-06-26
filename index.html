@@ -152,7 +152,7 @@
     <strong>🔑 Enter your Anthropic API Key to get started</strong>
     <p>Get one free at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a> — stored only in your browser session, never on any server.</p>
     <div class="key-row">
-      <input type="password" id="keyInput" placeholder="sk-ant-..." />
+      <input type="password" id="keyInput" placeholder="sk-ant-... or sk-..." onkeydown="if(event.key==='Enter') saveKey()" />
       <button onclick="saveKey()">Save &amp; Start</button>
     </div>
     <div id="keyStatus"></div>
@@ -222,9 +222,13 @@
 // ─── API KEY ────────────────────────────────────────────
 function saveKey() {
   const v = document.getElementById("keyInput").value.trim();
-  if (!v.startsWith("sk-ant-")) {
-    status("❌ Key must start with sk-ant-", "red"); return;
+  if (!v || v.length < 10) {
+    status("❌ Please paste your full API key", "red"); return;
   }
+  sessionStorage.setItem("ant_key", v);
+  document.getElementById("keyBanner").classList.add("hidden");
+  status("✅ Saved!", "green");
+}
   sessionStorage.setItem("ant_key", v);
   document.getElementById("keyBanner").classList.add("hidden");
   status("✅ Saved!", "green");
