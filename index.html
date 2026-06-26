@@ -45,8 +45,6 @@
     .app-section { max-width: 740px; margin: 0 auto; padding: 0 20px 80px; }
 
     .key-banner { background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 14px; padding: 18px 20px; margin-bottom: 22px; }
-    .key-banner.hidden { display: none; }
-    .key-banner[style*="display: none"] { display: none !important; }
     .key-banner strong { font-size: 0.92rem; color: #92400e; display: block; margin-bottom: 4px; }
     .key-banner p { font-size: 0.8rem; color: #b45309; margin-bottom: 10px; }
     .key-banner a { color: var(--accent); }
@@ -75,7 +73,6 @@
     .abtn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
     .rbox { margin-top: 16px; }
-    .rbox:empty { display: none; }
     .ri { background: var(--accent-light); border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 16px 18px; white-space: pre-wrap; font-size: 0.88rem; line-height: 1.8; color: var(--ink2); }
     .re { background: #fff1f2; border: 1.5px solid #fca5a5; border-radius: 12px; padding: 13px 16px; font-size: 0.86rem; color: #b91c1c; line-height: 1.6; }
     .rl { display: flex; align-items: center; gap: 10px; color: var(--accent); font-size: 0.88rem; font-weight: 600; padding: 14px 0; }
@@ -90,7 +87,7 @@
     .cm.ai .cb { background: var(--surface); border: 1px solid var(--border); color: var(--ink2); border-bottom-left-radius: 4px; }
     .chat-row { display: flex; gap: 8px; margin-top: 10px; align-items: flex-end; }
     .chat-row textarea { margin: 0; resize: none; }
-    .sbtn { width: 42px; height: 42px; background: var(--accent); color: #fff; border: none; border-radius: 9px; font-size: 1rem; cursor: pointer; flex-shrink: 0; transition: background 0.15s; }
+    .sbtn { width: 42px; height: 42px; background: var(--accent); color: #fff; border: none; border-radius: 9px; font-size: 1rem; cursor: pointer; flex-shrink: 0; }
     .sbtn:hover:not(:disabled) { background: #6d28d9; }
     .sbtn:disabled { opacity: 0.4; cursor: not-allowed; }
     .clrbtn { margin-top: 8px; padding: 6px 14px; background: transparent; border: 1px solid var(--border); border-radius: 7px; font-size: 0.75rem; color: var(--muted); cursor: pointer; font-family: inherit; }
@@ -127,7 +124,7 @@
 </header>
 
 <section class="hero">
-  <div class="hero-badge">✦ Powered by Groq AI</div>
+  <div class="hero-badge">✦ Powered by Google Gemini</div>
   <h1>Study Smarter,<br /><span class="grad">Not Harder</span></h1>
   <p>Explain topics, generate quizzes, summarize notes,<br />and chat with an AI tutor — all in one place.</p>
   <a href="#app" class="hero-btn">Start Studying →</a>
@@ -151,10 +148,10 @@
 <section class="app-section" id="app">
 
   <div class="key-banner" id="keyBanner">
-    <strong>🔑 Enter your Groq API Key to get started</strong>
-    <p>Get one free at <a href="https://console.groq.com" target="_blank">console.groq.com</a> — stored only in your browser session, never on any server.</p>
+    <strong>🔑 Enter your Google Gemini API Key to get started</strong>
+    <p>Get one free at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> — 100% free, no credit card needed. Stored only in your browser.</p>
     <div class="key-row">
-      <input type="password" id="keyInput" placeholder="gsk_..." onkeydown="if(event.key==='Enter') saveKey()" />
+      <input type="password" id="keyInput" placeholder="AIza..." onkeydown="if(event.key==='Enter') saveKey()" />
       <button onclick="saveKey()">Save &amp; Start</button>
     </div>
     <div id="keyStatus"></div>
@@ -217,76 +214,66 @@
 
 <footer>
   <p>Built by <strong>Divyansh Singh</strong> · <a href="https://github.com/DivyanshSingh9073/Al-Study-Assistant-.git" target="_blank">GitHub ↗</a></p>
-  <p class="fsub">Your API key is only sent to Groq directly — never stored on any server.</p>
+  <p class="fsub">Your API key is sent only to Google — never stored on any server.</p>
 </footer>
 
 <script>
-// ─── API KEY ────────────────────────────────────────────
+// ─── KEY MANAGEMENT ──────────────────────────────────────
+window._key = "";
+
 function saveKey() {
-  const input = document.getElementById("keyInput");
-  const v = input.value.trim();
-  const statusEl = document.getElementById("keyStatus");
+  const v = document.getElementById("keyInput").value.trim();
+  const st = document.getElementById("keyStatus");
   const banner = document.getElementById("keyBanner");
 
-  statusEl.textContent = "Saving...";
-  statusEl.style.color = "#b45309";
-
-  if (!v || v.length < 5) {
-    statusEl.textContent = "❌ Key is empty or too short — paste your full key";
-    statusEl.style.color = "#b91c1c";
+  if (!v || v.length < 8) {
+    st.textContent = "❌ Please paste your full API key";
+    st.style.color = "#b91c1c";
     return;
   }
 
-  try {
-    sessionStorage.setItem("ai_key", v);
-    const check = sessionStorage.getItem("ai_key");
-    if (check !== v) throw new Error("sessionStorage failed");
-    banner.style.display = "none";
-    statusEl.textContent = "✅ Key saved!";
-    statusEl.style.color = "#059669";
-  } catch(e) {
-    // sessionStorage blocked (private browsing etc) — use a global variable instead
-    window._ai_key = v;
-    banner.style.display = "none";
-    statusEl.textContent = "✅ Key saved (memory mode)!";
-    statusEl.style.color = "#059669";
-  }
+  window._key = v;
+  try { sessionStorage.setItem("gemini_key", v); } catch(e) {}
+  banner.style.display = "none";
+  st.textContent = "✅ Key saved!";
+  st.style.color = "#059669";
 }
 
 function getKey() {
-  try { return sessionStorage.getItem("ai_key") || window._ai_key || ""; }
-  catch(e) { return window._ai_key || ""; }
+  if (window._key) return window._key;
+  try { return sessionStorage.getItem("gemini_key") || ""; } catch(e) { return ""; }
 }
 
 window.addEventListener("load", () => {
-  if (getKey()) document.getElementById("keyBanner").style.display = "none";
+  const k = getKey();
+  if (k) { window._key = k; document.getElementById("keyBanner").style.display = "none"; }
 });
 
+// ─── GEMINI API (supports browser calls natively) ────────
 async function ask(prompt) {
   const key = getKey();
   if (!key) {
     document.getElementById("keyBanner").style.display = "block";
-    throw new Error("Please enter your Groq API key above.");
+    throw new Error("Please enter your Gemini API key above.");
   }
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+
+  const res = await fetch(url, {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${key}`,
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "llama3-8b-8192",
-      max_tokens: 1024,
-      messages: [
-        { role: "system", content: "You are a helpful AI study assistant for students. Be clear, concise and friendly." },
-        { role: "user", content: prompt }
-      ]
+      contents: [{
+        parts: [{ text: "You are a helpful AI study assistant for students. Be clear, concise and friendly.\n\n" + prompt }]
+      }],
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.7 }
     })
   });
 
-  if (res.status === 401) {
-    sessionStorage.removeItem("ai_key"); window._ai_key = "";
+  if (res.status === 400) { const t = await res.json(); throw new Error("Bad request: " + (t?.error?.message || "check your key")); }
+  if (res.status === 403) {
+    window._key = "";
+    try { sessionStorage.removeItem("gemini_key"); } catch(e) {}
     document.getElementById("keyBanner").style.display = "block";
     throw new Error("Invalid API key — please re-enter.");
   }
@@ -294,17 +281,17 @@ async function ask(prompt) {
   if (!res.ok) { const t = await res.text(); throw new Error(`API error ${res.status}: ${t.slice(0,150)}`); }
 
   const data = await res.json();
-  return data.choices?.[0]?.message?.content?.trim() || "";
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
 }
 
-// ─── UI HELPERS ─────────────────────────────────────────
+// ─── UI HELPERS ──────────────────────────────────────────
 function loading(id) { document.getElementById(id).innerHTML = `<div class="rl"><div class="sp"></div>Thinking…</div>`; }
 function result(id, t) { document.getElementById(id).innerHTML = `<div class="ri">${esc(t)}</div>`; }
 function err(id, m) { document.getElementById(id).innerHTML = `<div class="re">⚠️ ${esc(m)}</div>`; }
 function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-function dis(tabId, v) { const b = document.querySelector(`#tab-${tabId} .abtn`); if(b) b.disabled = v; }
+function dis(id, v) { const b = document.querySelector(`#tab-${id} .abtn`); if(b) b.disabled = v; }
 
-// ─── TABS ────────────────────────────────────────────────
+// ─── TABS ─────────────────────────────────────────────────
 function sw(id, el) {
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
   document.querySelectorAll(".tc").forEach(c => c.classList.remove("active"));
@@ -312,7 +299,7 @@ function sw(id, el) {
   document.getElementById(`tab-${id}`).classList.add("active");
 }
 
-// ─── EXPLAIN ─────────────────────────────────────────────
+// ─── EXPLAIN ──────────────────────────────────────────────
 async function runExplain() {
   const t = document.getElementById("explainInput").value.trim(); if (!t) return;
   dis("explain", true); loading("explainResult");
@@ -321,7 +308,7 @@ async function runExplain() {
   finally { dis("explain", false); }
 }
 
-// ─── QUIZ ────────────────────────────────────────────────
+// ─── QUIZ ─────────────────────────────────────────────────
 async function runQuiz() {
   const t = document.getElementById("quizInput").value.trim(); if (!t) return;
   dis("quiz", true); loading("quizResult");
@@ -331,7 +318,7 @@ async function runQuiz() {
   finally { dis("quiz", false); }
 }
 
-// ─── SUMMARIZE ───────────────────────────────────────────
+// ─── SUMMARIZE ────────────────────────────────────────────
 async function runSummarize() {
   const t = document.getElementById("summarizeInput").value.trim(); if (!t) return;
   dis("summarize", true); loading("summarizeResult");
@@ -340,7 +327,7 @@ async function runSummarize() {
   finally { dis("summarize", false); }
 }
 
-// ─── CHAT ────────────────────────────────────────────────
+// ─── CHAT ─────────────────────────────────────────────────
 let hist = [];
 
 function addMsg(role, text) {
@@ -348,4 +335,94 @@ function addMsg(role, text) {
   const d = document.createElement("div");
   d.className = `cm ${role}`;
   d.innerHTML = `<div class="cb">${esc(text)}</div>`;
-  w.ap
+  w.appendChild(d); w.scrollTop = w.scrollHeight;
+}
+
+function addThinking() {
+  const w = document.getElementById("chatWin");
+  const d = document.createElement("div");
+  d.id = "thinking"; d.className = "cm ai";
+  d.innerHTML = `<div class="cb"><div class="rl" style="padding:0"><div class="sp"></div>Thinking…</div></div>`;
+  w.appendChild(d); w.scrollTop = w.scrollHeight;
+}
+
+async function runChat() {
+  const inp = document.getElementById("chatInput").value.trim(); if (!inp) return;
+  document.getElementById("chatInput").value = "";
+  addMsg("user", inp); hist.push({ role: "user", text: inp });
+  addThinking();
+  document.querySelector(".sbtn").disabled = true;
+
+  const ctx = hist.slice(-7, -1).map(m =>
+    m.role === "user" ? `Student: ${m.text}` : `Tutor: ${m.text}`
+  ).join("\n");
+
+  try {
+    const ans = await ask((ctx ? `Conversation so far:\n${ctx}\n\n` : "") + `Student: ${inp}\n\nReply as a helpful study tutor.`);
+    document.getElementById("thinking")?.remove();
+    addMsg("ai", ans); hist.push({ role: "ai", text: ans });
+  } catch(e) {
+    document.getElementById("thinking")?.remove();
+    addMsg("ai", "⚠️ " + e.message);
+  } finally { document.querySelector(".sbtn").disabled = false; }
+}
+
+function chatKey(e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runChat(); } }
+
+function clearChat() {
+  hist = [];
+  document.getElementById("chatWin").innerHTML =
+    `<div class="cm ai"><div class="cb">Hi! I'm your AI study tutor. Ask me anything 👋</div></div>`;
+}
+
+// ─── PDF ──────────────────────────────────────────────────
+let pdfText = "";
+
+function dragOver(e) { e.preventDefault(); document.getElementById("dropZone").classList.add("over"); }
+function dropFile(e) { e.preventDefault(); document.getElementById("dropZone").classList.remove("over"); if (e.dataTransfer.files[0]) processPDF(e.dataTransfer.files[0]); }
+function handleFile(e) { if (e.target.files[0]) processPDF(e.target.files[0]); }
+
+function processPDF(file) {
+  if (file.type !== "application/pdf") { alert("Please select a PDF file."); return; }
+  document.getElementById("fileName").textContent = `📎 ${file.name}`;
+  loading("pdfResult");
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      if (!window.pdfjsLib) {
+        await new Promise((res, rej) => {
+          const s = document.createElement("script");
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+          s.onload = res; s.onerror = rej; document.head.appendChild(s);
+        });
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      }
+      const pdf = await pdfjsLib.getDocument(new Uint8Array(e.target.result)).promise;
+      let text = "";
+      for (let i = 1; i <= Math.min(pdf.numPages, 8); i++) {
+        const pg = await pdf.getPage(i);
+        const ct = await pg.getTextContent();
+        text += ct.items.map(x => x.str).join(" ") + "\n";
+      }
+      pdfText = text.trim();
+      if (!pdfText) { err("pdfResult", "No readable text — may be a scanned image PDF."); return; }
+      document.getElementById("pdfBtn").disabled = false;
+      document.getElementById("pdfResult").innerHTML =
+        `<div class="ri" style="font-size:0.8rem;color:#6b6882">✅ Loaded ${pdf.numPages} page(s). Click "Summarize PDF" to continue.</div>`;
+    } catch(e) { err("pdfResult", "PDF error: " + e.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function runPDF() {
+  if (!pdfText) return;
+  document.getElementById("pdfBtn").disabled = true; loading("pdfResult");
+  try {
+    result("pdfResult", await ask(`Summarize this document for a student:\n1. Two-sentence overview.\n2. Five key bullet points.\n\nDocument:\n${pdfText.slice(0, 2000)}`));
+  } catch(e) { err("pdfResult", e.message); }
+  finally { document.getElementById("pdfBtn").disabled = false; }
+}
+</script>
+</body>
+</html>
