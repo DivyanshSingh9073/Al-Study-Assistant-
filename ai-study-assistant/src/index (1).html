@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Study Assistant</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <link rel="stylesheet" href="./style.css" id="theme-stylesheet" />
+  </head>
+  <body class="theme-dark font-sans antialiased text-slate-100 bg-slate-950">
+    
+    <!-- Animated Ambient Background Blobs -->
+    <div class="ambient-background" id="ambient-bg">
+      <div class="blob blob-purple" id="blob-1"></div>
+      <div class="blob blob-blue" id="blob-2"></div>
+      <div class="blob blob-cyan" id="blob-3"></div>
+    </div>
+
+    <!-- Application Wrapper -->
+    <div class="app-container" id="app-wrapper">
+      
+      <!-- Mobile Navigation Header -->
+      <header class="mobile-header" id="mobile-navigation-bar">
+        <button class="icon-btn" id="mobile-sidebar-toggle" aria-label="Toggle Sidebar">
+          <i data-lucide="menu"></i>
+        </button>
+        <div class="mobile-logo-area">
+          <i data-lucide="graduation-cap" class="text-primary-400"></i>
+          <span class="logo-text font-display">AI Study</span>
+        </div>
+        <div class="mobile-timer-badge hidden" id="mobile-pomodoro-badge">
+          <i data-lucide="timer" class="text-accent"></i>
+          <span id="mobile-pomodoro-time">25:00</span>
+        </div>
+      </header>
+
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar-container" id="app-sidebar">
+        <div class="sidebar-header">
+          <div class="logo-wrapper">
+            <i data-lucide="graduation-cap" class="logo-icon text-primary-400"></i>
+            <h1 class="logo-title font-display">AI Study Suite</h1>
+          </div>
+          <button class="icon-btn mobile-only-btn" id="mobile-sidebar-close" aria-label="Close Sidebar">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <nav class="sidebar-nav" id="sidebar-navigation-menu">
+          <button class="nav-item active" data-target="dashboard" id="nav-dashboard">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Dashboard</span>
+          </button>
+          <button class="nav-item" data-target="chat" id="nav-chat">
+            <i data-lucide="message-square"></i>
+            <span>AI Study Buddy</span>
+          </button>
+          <button class="nav-item" data-target="explain" id="nav-explain">
+            <i data-lucide="book-open"></i>
+            <span>Explain Topic</span>
+          </button>
+          <button class="nav-item" data-target="quiz" id="nav-quiz">
+            <i data-lucide="award"></i>
+            <span>Quiz Generator</span>
+          </button>
+          <button class="nav-item" data-target="summarizer" id="nav-summarizer">
+            <i data-lucide="file-text"></i>
+            <span>Summarizers</span>
+          </button>
+          <button class="nav-item" data-target="flashcards" id="nav-flashcards">
+            <i data-lucide="layers"></i>
+            <span>Flashcards</span>
+          </button>
+          <button class="nav-item" data-target="planner" id="nav-planner">
+            <i data-lucide="calendar"></i>
+            <span>Study Planner</span>
+          </button>
+          <button class="nav-item" data-target="pomodoro" id="nav-pomodoro">
+            <i data-lucide="timer"></i>
+            <span>Pomodoro Timer</span>
+            <span class="active-badge hidden" id="sidebar-timer-badge">Live</span>
+          </button>
+          <button class="nav-item" data-target="settings" id="nav-settings">
+            <i data-lucide="settings"></i>
+            <span>Settings</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-profile-badge" id="sidebar-profile">
+            <div class="avatar" id="user-avatar">AI</div>
+            <div class="user-info">
+              <span class="user-name" id="user-name-display">Scholar</span>
+              <span class="user-status" id="api-status-badge">
+                <span class="status-dot status-offline"></span> No API Key
+              </span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Workspace -->
+      <main class="workspace-area" id="main-workspace-scroll">
+        
+        <!-- Workspace Header (Desktop) -->
+        <header class="workspace-header desktop-only" id="workspace-desktop-header">
+          <div class="header-greeting">
+            <h2 class="welcome-title font-display" id="workspace-welcome-text">Welcome back, Scholar!</h2>
+            <p class="welcome-subtitle" id="workspace-date-text">July 1, 2026</p>
+          </div>
+          <div class="header-stats-panel">
+            <div class="streak-badge" id="header-streak-card">
+              <i data-lucide="flame" class="streak-icon text-accent"></i>
+              <div class="streak-info">
+                <span class="streak-value" id="header-streak-value">0 Days</span>
+                <span class="streak-label">Study Streak</span>
+              </div>
+            </div>
+            <div class="quick-timer-badge hidden" id="header-pomodoro-card">
+              <i data-lucide="clock" class="timer-icon text-primary-400 animate-pulse"></i>
+              <div class="timer-info">
+                <span class="timer-value" id="header-pomodoro-time">25:00</span>
+                <span class="timer-label" id="header-pomodoro-label">Pomodoro</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Content Stages (Dynamic Page Container) -->
+        <div class="content-container" id="content-stage-wrapper">
+          
+          <!-- 1. DASHBOARD STAGE -->
+          <section class="content-stage active" id="stage-dashboard">
+            <div class="grid-layout-3x3" id="dashboard-bento-grid">
+              
+              <!-- Quick Overview Card -->
+              <div class="glass-card bento-hero span-2" id="db-card-hero">
+                <div class="hero-content">
+                  <h3 class="hero-title font-display">Ready for your next study session?</h3>
+                  <p class="hero-text">Your AI tutor is fully charged and ready to assist. Pick a module from the sidebar, summarize notes, quiz your knowledge, or jump right into your study chat.</p>
+                  <div class="hero-actions">
+                    <button class="primary-btn" id="db-btn-quickstart-chat">
+                      <i data-lucide="message-square"></i> Talk to Tutor
+                    </button>
+                    <button class="secondary-btn" id="db-btn-quickstart-planner">
+                      <i data-lucide="calendar"></i> Check Schedule
+                    </button>
+                  </div>
+                </div>
+                <div class="hero-illustration">
+                  <i data-lucide="brain-circuit" class="floating-illustration"></i>
+                </div>
+              </div>
+
+              <!-- Today's Streak Card -->
+              <div class="glass-card flex-col-center" id="db-card-streak">
+                <div class="circular-progress-wrapper">
+                  <svg class="circular-progress-svg" viewBox="0 0 100 100">
+                    <circle class="progress-bg" cx="50" cy="50" r="40"></circle>
+                    <circle class="progress-bar" id="db-streak-circle" cx="50" cy="50" r="40" style="stroke-dasharray: 251.2; stroke-dashoffset: 251.2;"></circle>
+                  </svg>
+                  <div class="progress-text-container">
+                    <i data-lucide="flame" class="streak-icon-big animate-pulse"></i>
+                    <span class="progress-value" id="db-streak-days">0</span>
+                    <span class="progress-label">Days</span>
+                  </div>
+                </div>
+                <h4 class="card-title font-display margin-top-sm">Study Streak</h4>
+                <p class="card-subtitle" id="db-streak-tip">Study every day to build a habit!</p>
+              </div>
+
+              <!-- Today's Planner Overview -->
+              <div class="glass-card" id="db-card-planner">
+                <div class="card-header-row">
+                  <h4 class="card-title font-display"><i data-lucide="check-square" class="text-primary-400"></i> Today's Tasks</h4>
+                  <span class="badge" id="db-planner-count">0/0</span>
+                </div>
+                <div class="task-list-mini" id="db-task-list">
+                  <!-- Dynamic small task list -->
+                  <div class="empty-state-mini">
+                    <p>No tasks added for today.</p>
+                    <button class="link-btn" id="db-add-task-link">Create Task</button>
+                  </div>
+                </div>
+                <div class="progress-bar-wrapper margin-top-sm">
+                  <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="db-planner-progress" style="width: 0%"></div>
+                  </div>
+                  <span class="progress-percentage-label" id="db-planner-progress-percent">0% Completed</span>
+                </div>
+              </div>
+
+              <!-- Study Analytics Chart Card -->
+              <div class="glass-card span-2" id="db-card-chart">
+                <div class="card-header-row">
+                  <h4 class="card-title font-display"><i data-lucide="trending-up" class="text-cyan"></i> Study Session Activity</h4>
+                  <span class="card-subtitle">Last 7 Days</span>
+                </div>
+                <div class="chart-container-relative">
+                  <canvas id="db-study-chart" class="custom-chart-canvas"></canvas>
+                </div>
+              </div>
+
+              <!-- Pomodoro Quick Card -->
+              <div class="glass-card" id="db-card-pomodoro">
+                <h4 class="card-title font-display"><i data-lucide="timer" class="text-accent"></i> Pomodoro Focus</h4>
+                <div class="timer-countdown-sm" id="db-timer-value">25:00</div>
+                <div class="flex-row-center gap-sm">
+                  <button class="primary-btn btn-sm" id="db-timer-toggle"><i data-lucide="play"></i> Start</button>
+                  <button class="secondary-btn btn-sm" id="db-timer-reset"><i data-lucide="rotate-ccw"></i></button>
+                </div>
+                <p class="card-subtitle text-center margin-top-xs" id="db-timer-sessions">Completed Sessions: 0</p>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- 2. AI STUDY BUDDY CHAT STAGE -->
+          <section class="content-stage" id="stage-chat">
+            <div class="stage-header-row">
+              <div>
+                <h3 class="stage-title font-display">AI Study Buddy</h3>
+                <p class="stage-subtitle">Ask questions, request summaries, or clarify difficult concepts. Supported by Gemini.</p>
+              </div>
+              <button class="danger-btn btn-sm" id="chat-clear-history">
+                <i data-lucide="trash-2"></i> Clear Chat History
+              </button>
+            </div>
+
+            <div class="chat-main-container">
+              
+              <!-- Chat Left Sidebar: Conversation List -->
+              <div class="chat-sidebar glass-card" id="chat-conversations-list">
+                <div class="chat-sidebar-header">
+                  <button class="primary-btn w-full" id="chat-new-convo-btn">
+                    <i data-lucide="plus"></i> New Conversation
+                  </button>
+                </div>
+                <div class="chat-threads" id="chat-threads-container">
+                  <!-- Thread items rendered here -->
+                </div>
+              </div>
+
+              <!-- Chat Main Interface -->
+              <div class="chat-workspace glass-card" id="chat-window-pane">
+                
+                <!-- Chat Messages Scroll Area -->
+                <div class="chat-messages" id="chat-messages-container">
+                  
+                  <!-- Tutorial Welcome Card inside chat -->
+                  <div class="chat-welcome-tutorial" id="chat-tutorial-panel">
+                    <div class="tutorial-logo">
+                      <i data-lucide="bot" class="text-primary-400"></i>
+                    </div>
+                    <h4 class="tutorial-title font-display">Hello! I am your AI Study Buddy.</h4>
+                    <p class="tutorial-text">I can help you study, organize ideas, quiz your comprehension, or write study notes. Ask me anything or select a prompt below to get started:</p>
+                    
+                    <div class="tutorial-prompts-grid">
+                      <button class="prompt-suggestion-btn" data-prompt="Explain quantum physics like I am five years old.">
+                        <span class="prompt-topic">Physics</span>
+                        <span class="prompt-summary">Explain quantum mechanics simply</span>
+                      </button>
+                      <button class="prompt-suggestion-btn" data-prompt="Create a study outline for a World History exam covering World War I.">
+                        <span class="prompt-topic">History</span>
+                        <span class="prompt-summary">World War I study outline</span>
+                      </button>
+                      <button class="prompt-suggestion-btn" data-prompt="Give me a mnemonic device to remember the order of taxonomy in biology.">
+                        <span class="prompt-topic">Biology</span>
+                        <span class="prompt-summary">Taxonomy mnemonic device</span>
+                      </button>
+                      <button class="prompt-suggestion-btn" data-prompt="Solve this math problem step-by-step: Solve for x in 2x + 5 = 15.">
+                        <span class="prompt-topic">Mathematics</span>
+                        <span class="prompt-summary">Math step-by-step solution</span>
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Chat Input Controls Area -->
+                <div class="chat-input-controls">
+                  <div class="typing-indicator-wrapper hidden" id="chat-typing-indicator">
+                    <div class="typing-bubble">
+                      <span class="dot"></span>
+                      <span class="dot"></span>
+                      <span class="dot"></span>
+                    </div>
+                    <span class="indicator-text">Tutor is analyzing...</span>
+                  </div>
+                  
+                  <form class="chat-form-row" id="chat-input-form" onsubmit="return false;">
+                    <textarea class="chat-input" id="chat-user-message-input" placeholder="Ask your study assistant a question... (Shift + Enter for new line)" rows="1" required></textarea>
+                    <button type="submit" class="primary-btn chat-send-btn" id="chat-send-message-btn" aria-label="Send Message">
+                      <i data-lucide="send"></i>
+                    </button>
+                  </form>
+                </div>
+
+              </div>
+
+            </div>
+          </section>
+
+          <!-- 3. EXPLAIN TOPIC STAGE -->
+          <section class="content-stage" id="stage-explain">
+            <div class="stage-header-row">
+              <div>
+                <h3 class="stage-title font-display">Explain Topic</h3>
+                <p class="stage-subtitle">Enter any complex topic, choose a level of depth, and let Gemini construct a structured guide filled with summaries, analogies, and key points.</p>
+              </div>
+            </div>
+
+            <div class="glass-card pad-lg max-w-4xl mx-auto" id="explain-input-card">
+              <form id="explain-topic-form" class="flex-column gap-md" onsubmit="return false;">
+                
+                <div class="form-group">
+                  <label for="explain-input-subject" class="form-label">What topic do you want explained?</label>
+                  <input type="text" id="explain-input-subject" class="form-control" placeholder="e.g. Photosynthesis, Blockchain, Machine Learning..." required />
+                </div>
+
+                <div class="grid-2col gap-md">
+                  <div class="form-group">
+                    <label for="explain-input-depth" class="form-label">Explanation Depth</label>
+                    <select id="explain-input-depth" class="form-control">
+                      <option value="five-years-old">Explain Like I'm 5 (ELIF)</option>
+                      <option value="beginner" selected>Beginner Friendly / Conceptual</option>
+                      <option value="detailed">Detailed Study Guide</option>
+                      <option value="expert">Academic / Expert Analysis</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group flex-col-end">
+                    <button type="submit" class="primary-btn w-full justify-center" id="explain-submit-btn">
+                      <i data-lucide="sparkles"></i> Generate Explanation
+                    </button>
+                  </div>
+                </div>
+
+              </form>
+            </div>
+
+            <!-- Loader / Skeletons for Explanation -->
+            <div class="skeleton-container hidden max-w-4xl mx-auto margin-top-md" id="explain-loading-skeleton">
+              <div class="skeleton-line skeleton-title"></div>
+              <div class="skeleton-line skeleton-paragraph"></div>
+              <div class="skeleton-line skeleton-paragraph"></div>
+              <div class="skeleton-line skeleton-paragraph"></div>
+            </div>
+
+            <!-- Explanation Output Pane -->
+            <div class="glass-card pad-lg max-w-4xl mx-auto margin-top-md hidden" id="explain-output-card">
+              <div class="card-header-row border-bottom pad-bottom-sm">
+                <h4 class="font-display text-primary-400" id="explain-output-title">Explanation Title</h4>
+                <div class="flex-row gap-sm">
+                  <button class="secondary-btn btn-sm" id="explain-btn-copy" title="Copy Explanation">
+                    <i data-lucide="copy"></i> Copy
+                  </button>
+                  <button class="secondary-btn btn-sm" id="explain-btn-export" title="Export as TXT">
+                    <i data-lucide="download"></i> Export
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Segmented Explanations -->
+              <div class="explain-output-content margin-top-md" id="explain-output-body">
+                <!-- Explanations render dynamically -->
+              </div>
+            </div>
+          </section>
+
+          <!-- 4. QUIZ GENERATOR STAGE -->
+          <section class="content-stage" id="stage-quiz">
+            <div class="stage-header-row">
+              <div>
+                <h3 class="stage-title font-display">AI Quiz Generator</h3>
+                <p class="stage-subtitle">Input your study material or select a topic to automatically build a custom multiple-choice quiz and test your comprehension.</p>
+              </div>
+            </div>
+
+            <div class="glass-card pad-lg max-w-4xl mx-auto" id="quiz-setup-card">
+              <form id="quiz-generator-form" class="flex-column gap-md" onsubmit="return false;">
+                
+                <div class="form-group">
+                  <label for="quiz-input-topic" class="form-label">Enter Topic or Paste Study Notes</label>
+                  <textarea id="quiz-input-topic" class="form-control" rows="4" placeholder="Enter a general topic (e.g., French Revolution) or paste paragraphs of your study notes to generate highly targeted questions..." required></textarea>
+                </div>
+
+                <div class="grid-3col gap-md">
+                  <div class="form-group">
+                    <label for="quiz-input-difficulty" class="form-label">Difficulty Level</label>
+                    <select id="quiz-input-difficulty" class="form-control">
+                      <option value="easy">Easy</option>
+                      <option value="medium" selected>Medium</option>
+                      <option value="hard">Hard</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="quiz-input-count" class="form-label">Number of Questions</label>
+                    <select id="quiz-input-count" class="form-control">
+                      <option value="3">3 Questions</option>
+                      <option value="5" selected>5 Questions</option>
+                      <option value="10">10 Questions</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group flex-col-end">
+                    <button type="submit" class="primary-btn w-full justify-center" id="quiz-submit-btn">
+                      <i data-lucide="award"></i> Generate Quiz
+                    </button>
+                  </div>
+                </div>
+
+              </form>
+            </div>
+
+            <!-- Quiz Loading Skeletons -->
+            <div class="skeleton-container hidden max-w-4xl mx-auto margin-top-md" id="quiz-loading-skeleton">
+              <div class="skeleton-line skeleton-title"></div>
+              <div class="skeleton-line skeleton-paragraph"></div>
+              <div class="skeleton-line skeleton-paragraph"></div>
+            </div>
+
+            <!-- Quiz Game Stage -->
+            <div class="glass-card pad-lg max-w-4xl mx-auto margin-top-md hidden" id="quiz-game-card">
+              
+              <!-- Quiz Progress Row -->
+              <div class="quiz-info-row border-bottom pad-bottom-sm">
+                <div class="quiz-progress-text">
+                  Question <span id="quiz-current-index">1</span> of <span id="quiz-total-count">5</span>
+                </div>
+                <div class="quiz-timer-box text-accent">
+                  <i data-lucide="clock"></i> <span id="quiz-timer-clock">00:00</span>
+                </div>
+              </div>
+
+              <!-- Question Body -->
+              <div class="quiz-question-container margin-top-md">
+                <h4 class="quiz-question-text font-display" id="quiz-active-question">Active Question?</h4>
+                
+                <div class="quiz-options-list margin-top-md" id="quiz-options-container">
+                  <!-- Dynamic MCQ option buttons -->
+                </div>
+              </div>
+
+              <!-- Answer Feedback Panel -->
+              <div class="quiz-feedback-box margin-top-md hidden" id="quiz-feedback-panel">
+                <h5 class="feedback-heading font-display" id="quiz-feedback-title">Correct!</h5>
+                <p class="feedback-text" id="quiz-feedback-explanation">Explanation comes here...</p>
+                <div class="flex-row-end margin-top-sm">
+                  <button class="primary-btn btn-sm" id="quiz-next-question-btn">
+                    Next Question <i data-lucide="arrow-right"></i>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Quiz Score Summary Screen -->
+            <div class="glass-card pad-lg max-w-3xl mx-auto margin-top-md hidden text-center" id="quiz-score-card">
+              <div class="score-icon-badge">
+                <i data-lucide="trophy" class="score-trophy-icon text-accent"></i>
+              </div>
+              <h4 class="score-title font-display margin-top-sm">Quiz Completed!</h4>
+              <p class="score-subtitle">Here are your study results:</p>
+              
+              <div class="score-details-row margin-top-md flex-row-center gap-lg">
+                <div class="score-stat-box">
+                  <span class="score-big-text" id="quiz-final-score">0 / 0</span>
+                  <span class="score-label">Final Score</span>
+                </div>
+                <div class="score-stat-box">
+                  <span class="score-big-text" id="quiz-final-percentage">0%</span>
+                  <span class="score-label">Accuracy</span>
+                </div>
+                <div class="score-stat-box">
+                  <span class="score-big-text" id="quiz-final-time">0s</span>
+                  <span class="score-label">Time Taken</span>
+                </div>
+              </div>
+
+              <div class="flex-row-center gap-sm margin-top-lg">
+                <button class="primary-btn" id="quiz-restart-btn">
+                  <i data-lucide="rotate-ccw"></i> Try Another Quiz
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- 5. SUMMARIZERS STAGE (NOTES & PDF) -->
+          <section class="content-stage" id="stage-summarizer">
+            <div class="stage-header-row">
+              <div>
+                <h3 class="stage-title font-display">Notes & PDF Summarizer</h3>
+                <p class="stage-subtitle">Paste long textbook notes or upload a PDF document. PDF.js will extract the material client-side and Gemini will formulate a structured breakdown with key concepts.</p>
+              </div>
+            </div>
+
+            <!-- Tab Headers -->
+            <div class="tabs-header-control border-bottom pad-bottom-xs">
+              <button class="tab-btn active" data-tab="notes" id="summarizer-tab-notes">
+                <i data-lucide="align-left"></i> Paste Study Notes
+              </button>
+              <button class="tab-btn" data-tab="pdf" id="summarizer-tab-pdf">
+                <i data-lucide="file-text"></i> Upload PDF Document
+              </button>
+            </div>
+
+            <!-- Tab Content Area -->
+            <div class="tab-content-box margin-top-md">
+              
+              <!-- Tab A: Paste Notes -->
+              <div class="tab-pane active" id="tab-pane-notes">
+                <div class="glass-card pad-lg max-w-4xl mx-auto">
+                  <form id="notes-summarize-form" class="flex-column gap-md" onsubmit="return false;">
+                    <div class="form-group">
+                      <label for="summarize-input-text" class="form-label">Paste textbook passages or lecture notes here:</label>
+                      <textarea id="summarize-input-text" class="form-control" rows="8" placeholder="Enter textbook chapters, articles, syllabus notes, or complex lectures (min 50 words)..." required></textarea>
+                    </div>
+
+                    <div class="form-group flex-row-end">
+                      <button type="submit" class="primary-btn justify-center" id="notes-summarize-submit-btn">
+                        <i data-lucide="sparkles"></i> Summarize Notes
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+              <!-- Tab B: PDF Document Upload -->
+              <div class="tab-pane" id="tab-pane-pdf">
+                <div class="glass-card pad-lg max-w-4xl mx-auto">
+                  <div class="file-upload-drag-zone" id="pdf-drag-drop-zone">
+                    <input type="file" id="pdf-file-picker" accept=".pdf" class="hidden" />
+                    <div class="drag-zone-content">
+                      <i data-lucide="upload-cloud" class="drag-icon text-primary-400"></i>
+                      <h4 class="drag-title font-display">Drag and drop your PDF file here</h4>
+                      <p class="drag-subtitle">or click to browse local files (max 10MB)</p>
+                    </div>
+                  </div>
+
+                  <div class="selected-file-row hidden" id="pdf-selected-file-pane">
+                    <div class="file-meta">
+                      <i data-lucide="file-text" class="text-primary-400"></i>
+                      <div class="file-info">
+                        <span class="file-name" id="pdf-meta-name">Document.pdf</span>
+                        <span class="file-size" id="pdf-meta-size">2.4 MB</span>
+                      </div>
+                    </div>
+                    <div class="flex-row gap-xs">
+                      <button class="danger-btn btn-sm" id="pdf-btn-cancel">Remove</button>
+                      <button class="primary-btn btn-sm" id="pdf-btn-process">
+                        <i data-lucide="sparkles"></i> Summarize PDF
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="pdf-extract-indicator-bar hidden" id="pdf-extraction-loader-bar">
+                    <div class="loading-bar-spinner"></div>
+                    <span id="pdf-extraction-status-text">Parsing PDF pages using PDF.js...</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Summarizer Loading Skeletons -->
+            <div class="skeleton-container hidden max-w-4xl mx-auto margin-top-md" id="summarizer-loading-skeleton">
+              <div class="skeleton-line skeleton-title"></div>
+              <div class="skeleton-line skeleton-paragraph"></div>
+              <div class="skeleton-line skeleton-paragraph"></div>
+            </div>
+
+            <!-- Summarizer Output Pane -->
+            <div class="glass-card pad-lg max-w-4xl mx-auto margin-top-md hidden" id="summarizer-output-card">
+              <div class="card-header-row border-bottom pad-bottom-sm">
+                <div class="flex-column">
+                  <h4 class="font-display text-primary-400" id="summarizer-output-title">Study Summary</h4>
+                  <p class="card-subtitle" id="summarizer-output-subtitle">Summary of your lecture text</p>
+                </div>
+                <div class="flex-row gap-sm">
+                  <button class="secondary-btn btn-sm" id="summarizer-btn-copy" title="Copy Summary">
+                    <i data-lucide="copy"></i> Copy
+                  </button>
+                  <button class="secondary-btn btn-sm" id="summarizer-btn-export" title="Export as TXT">
+                    <i data-lucide="download"></i> Export
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Segmented summaries -->
+              <div class="summarize-output-content margin-top-md" id="summarizer-output-body">
+                <!-- Summary renders dynamically -->
+              </div>
+            </div>
+          </section>
+
+          <!-- 6. FLASHCARDS STAGE -->
+          <section class="content-stage" id="stage-flashcards">
+            <div class="stage-header-row">
+              <div>
+                <h3 class="stage-title font-display">Study Flashcards</h3>
+                <p class="stage-subtitle">Flip cards to revise difficult terms and details. Shuffle cards or add custom cards to your active deck.</p>
+              </div>
+              <div class="flex-row gap-xs">
+                <button class="secondary-btn btn-sm" id="flashcard-add-custom-btn">
+                  <i data-lucide="plus"></i> Add Card
+                </button>
+                <button class="primary-btn btn-sm" id="flashcard-ai-generate-btn">
+                  <i data-lucide="sparkles"></i> AI Generate
+                </button>
+              </div>
+            </div>
+
+            <!-- Form: Create Card Modal (Hidden by default) -->
+            <div class="glass-card pad-md max-w-2xl mx-auto hidden margin-bottom-md" id="flashcard-add-modal-panel">
+              <div class="card-header-row border-bottom pad-bottom-xs margin-bottom-sm">
+                <h4 class="font-display">Create Custom Flashcard</h4>
+                <button class="icon-btn btn-sm" id="flashcard-add-modal-close"><i data-lucide="x"></i></button>
+              </div>
+              <form id="flashcard-create-form" class="flex-column gap-sm" onsubmit="return false;">
+                <div class="form-group">
+                  <label for="fc-create-question" class="form-label">Front Side (Question / Term)</label>
+                  <input type="text" id="fc-create-question" class="form-control" placeholder="e.g. Mitochondria" required />
+                </div>
+                <div class="form-group">
+                  <label for="fc-create-answer" class="form-label">Back Side (Answer / Concept)</label>
+                  <textarea id="fc-create-answer" class="form-control" rows="2" placeholder="e.g. The powerhouse of the cell, generates chemical energy (ATP)" required></textarea>
+                </div>
+                <div class="flex-row-end gap-xs margin-top-xs">
+                  <button type="submit" class="primary-btn btn-sm" id="fc-create-submit">Add to Deck</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Form: AI Generate Flashcards (Hidden by default) -->
+            <div class="glass-card pad-md max-w-2xl mx-auto hidden margin-bottom-md" id="flashcard-ai-modal-panel">
+              <div class="card-header-row border-bottom pad-bottom-xs margin-bottom-sm">
+                <h4 class="font-display">AI Flashcards Generator</h4>
+                <button class="icon-btn btn-sm" id="flashcard-ai-modal-close"><i data-lucide="x"></i></button>
+              </div>
+              <form id="flashcard-ai-form" class="flex-column gap-sm" onsubmit="return false;">
+                <div class="form-group">
+                  <label for="fc-ai-subject" class="form-label">Enter Subject or Topic</label>
+                  <input type="text" id="fc-ai-subject" class="form-control" placeholder="e.g. Civil War Dates, Chemistry Elements" required />
+                </div>
+                <div class="flex-row-end gap-xs margin-top-xs">
+                  <button type="submit" class="primary-btn btn-sm" id="fc-ai-submit">
+                    <i data-lucide="sparkles"></i> Generate 5 Cards
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Study Flashcards Main Arena -->
+            <div class="flashcards-main-wrapper max-w-2xl mx-auto">
+              
+              <!-- Flashcard Active Board -->
+              <div class="flashcard-board-3d" id="flashcard-active-element">
+                <div class="flashcard-card-inner">
+                  
+                  <!-- Front of Card -->
+                  <div class="flashcard-side flashcard-front">
+                    <div class="card-badge-top">Front Side</div>
+                    <div class="card-text-container">
+                      <p class="flashcard-text font-display" id="flashcard-front-content">What is Mitochondria?</p>
+                    </div>
+                    <div class="card-prompt-bottom">Click card to Flip</div>
+                  </div>
+
+                  <!-- Back of Card -->
+                  <div class="flashcard-side flashcard-back">
+                    <div class="card-badge-top">Back Side</div>
+                    <div class="card-text-container">
+                      <p class="flashcard-text" id="flashcard-back-content">The powerhouse of the cell, generating most of the cell's ATP supply.</p>
+                    </div>
+                    <div class="card-prompt-bottom">Click card to Flip</div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Controls Row -->
+              <div class="flashcard-controls-row margin-top-md flex-row-between">
+                <button class="secondary-btn" id="flashcard-btn-shuffle" title="Shuffle Deck">
+                  <i data-lucide="shuffle"></i> Shuffle
+                </button>
+
+                <div class="flashcard-pagination-controls">
+                  <button class="icon-btn" id="flashcard-btn-prev" aria-label="Previous Flashcard">
+                    <i data-lucide="chevron-left"></i>
+                  </button>
+                  <span class="pagination-indicator" id="flashcard-pagination-label">1 / 10</span>
+                  <button class="icon-btn" id="flashcard-btn-next" aria-label="Next Flashcard">
+                    <i data-lucide="chevron-right"></i>
+                  </button>
+                </div>
+
+                <button class="danger-btn btn-sm" id="flashcard-btn-clear" title="Clear Deck">
+                  <i data-lucide="trash-2"></i> Reset Deck
+                </button>
+              </div>
+
+              <!-- Progress Indicator Bar -->
+              <div class="progress-bar-wrapper margin-top-md">
+                <div class="progress-bar-track">
+                  <div class="progress-bar-fill" id="flashcard-progress-bar" style="width: 10%"></div>
+                </div>
+                <span class="progress-percentage-label" id="flashcard-progress-label">Deck Progress: 10%</span>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- 7. STUDY PLANNER STAGE -->
+          <section class="content-stage" id="stage-planner">
+            <div class="stage-header-row">
+              <div>
+                <h3 class="stage-title font-display">Study Planner</h3>
+                <p class="stage-subtitle">Organize, map, and check off study deadlines and objectives. Keep track of daily checklists.</p>
+              </div>
+            </div>
+
+            <div class="grid-2col max-w-6xl mx-auto gap-md">
+              
+              <!-- Left Column: Add Task and Stats -->
+              <div class="flex-column gap-md">
+                
+                <!-- Add Task Form -->
+                <div class="glass-card pad-md" id="planner-add-card">
+                  <h4 class="card-title font-display border-bottom pad-bottom-xs margin-bottom-sm">Add New Objective</h4>
+                  <form id="planner-add-task-form" class="flex-column gap-sm" onsubmit="return false;">
+                    <div class="form-group">
+                      <label for="task-input-title" class="form-label">Task Title</label>
+                      <input type="text" id="task-input-title" class="form-control" placeholder="e.g. Read Bio Chapter 4, Do Math set" required />
+                    </div>
+
+                    <div class="grid-2col gap-sm">
+                      <div class="form-group">
+                        <label for="task-input-day" class="form-label">Day Scheduled</label>
+                        <select id="task-input-day" class="form-control">
+                          <option value="today" selected>Today</option>
+                          <option value="tomorrow">Tomorrow</option>
+                          <option value="week">Later this week</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label for="task-input-category" class="form-label">Subject</label>
+                        <select id="task-input-category" class="form-control">
+                          <option value="general" selected>General Study</option>
+                          <option value="science">Science</option>
+                          <option value="math">Mathematics</option>
+                          <option value="humanities">Humanities</option>
+                          <option value="languages">Languages</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <button type="submit" class="primary-btn w-full justify-center margin-top-xs" id="task-submit-btn">
+                      <i data-lucide="plus"></i> Add Objective
+                    </button>
+                  </form>
+                </div>
+
+                <!-- Stats Summary -->
+                <div class="glass-card pad-md" id="planner-stats-card">
+                  <h4 class="card-title font-display border-bottom pad-bottom-xs margin-bottom-sm">Completion Statistics</h4>
+                  <div class="planner-stats-grid margin-top-sm">
+                    <div class="plan-stat-cell">
+                      <span class="plan-stat-num" id="plan-stat-total">0</span>
+                      <span class="plan-stat-label">Total Tasks</span>
+                    </div>
+                    <div class="plan-stat-cell">
+                      <span class="plan-stat-num" id="plan-stat-done">0</span>
+                      <span class="plan-stat-label">Completed</span>
+                    </div>
+                    <div class="plan-stat-cell">
+                      <span class="plan-stat-num" id="plan-stat-percent">0%</span>
+                      <span class="plan-stat-label">Success Rate</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Right Column: Task Management Board -->
+              <div class="glass-card pad-md" id="planner-board-card">
+                <div class="card-header-row border-bottom pad-bottom-xs margin-bottom-sm">
+                  <h4 class="card-title font-display">Active Study Checklist</h4>
+                  <div class="flex-row gap-xs">
+                    <button class="secondary-btn btn-sm" id="planner-filter-all">All</button>
+                    <button class="secondary-btn btn-sm" id="planner-filter-today">Today</button>
+                    <button class="secondary-btn btn-sm" id="planner-clear-completed" title="Clear Done Tasks">
+                      <i data-lucide="trash-2"></i> Clear Completed
+                    </button>
+                  </div>
+                </div>
+
+                <div class="planner-tasks-board-list" id="planner-tasks-container">
+                  <!-- List of tasks will appear here dynamically -->
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- 8. POMODORO TIMER STAGE -->
+          <section class="content-stage" id="stage-pomodoro">
+            <div class="stage-header-row">
+              <div>
+                <h3 class="stage-title font-display">Pomodoro Focus Timer</h3>
+                <p class="stage-subtitle">Train focus cycles using Pomodoro block timers. Standard: 25 minutes of studying followed by 5 minutes of rest.</p>
+              </div>
+            </div>
+
+            <div class="glass-card max-w-3xl mx-auto pad-lg text-center flex-column gap-md" id="pomodoro-timer-box">
+              
+              <!-- Circle Radial Timer Representation -->
+              <div class="pomodoro-radial-container max-w-xs mx-auto">
+                <svg class="circular-progress-svg" viewBox="0 0 100 100">
+                  <circle class="progress-bg" cx="50" cy="50" r="45"></circle>
+                  <circle class="progress-bar progress-bar-timer" id="pomodoro-timer-circle" cx="50" cy="50" r="45" style="stroke-dasharray: 282.7; stroke-dashoffset: 282.7;"></circle>
+                </svg>
+                <div class="progress-text-container">
+                  <span class="pomodoro-timer-text font-mono" id="pomodoro-timer-label">25:00</span>
+                  <span class="pomodoro-timer-state" id="pomodoro-timer-state-label">STUDY BLOCK</span>
+                </div>
+              </div>
+
+              <!-- Cycle Presets -->
+              <div class="timer-presets-row flex-row-center gap-xs">
+                <button class="secondary-btn btn-sm active" data-minutes="25" data-mode="study" id="pomo-preset-25">Study Block (25m)</button>
+                <button class="secondary-btn btn-sm" data-minutes="5" data-mode="break" id="pomo-preset-5">Short Break (5m)</button>
+                <button class="secondary-btn btn-sm" data-minutes="15" data-mode="longBreak" id="pomo-preset-15">Long Break (15m)</button>
+                <button class="secondary-btn btn-sm" data-minutes="custom" id="pomo-preset-custom">Custom</button>
+              </div>
+
+              <!-- Custom Minutes Setter (hidden by default) -->
+              <div class="timer-custom-setter-pane flex-row-center gap-xs hidden" id="pomodoro-custom-input-panel">
+                <label for="pomo-custom-input" class="form-label font-mono">Minutes:</label>
+                <input type="number" id="pomo-custom-input" class="form-control" style="width: 80px;" min="1" max="180" value="25" />
+                <button class="primary-btn btn-sm" id="pomo-custom-apply-btn">Apply</button>
+              </div>
+
+              <!-- Timer Primary Control Buttons -->
+              <div class="timer-primary-controls-row flex-row-center gap-md">
+                <button class="primary-btn pad-md font-display" id="pomodoro-btn-toggle">
+                  <i data-lucide="play"></i> Start Focusing
+                </button>
+                <button class="secondary-btn pad-md font-display" id="pomodoro-btn-reset">
+                  <i data-lucide="rotate-ccw"></i> Reset
+                </button>
+              </div>
+
+              <!-- Session Accomplishments -->
+              <div class="timer-accomplish-panel margin-top-md border-top pad-top-md">
+                <div class="grid-2col text-left gap-sm">
+                  <div class="glass-subcard pad-sm">
+                    <span class="pomo-sub-label">Focus Sessions Done Today</span>
+                    <span class="pomo-sub-val" id="pomodoro-session-count">0</span>
+                  </div>
+                  <div class="glass-subcard pad-sm">
+                    <span class="pomo-sub-label">Total Focusing Time Today</span>
+                    <span class="pomo-sub-val font-mono" id="pomodoro-total-minutes">0 Minutes</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- 9. SETTINGS STAGE -->
+          <section class="content-stage" id="stage-settings">
+            <div class="stage-header-row">
+              <div>
+                <h3 class="stage-title font-display">System Settings</h3>
+                <p class="stage-subtitle">Configure security keys, themes, font sizing, and take complete control over your study data storage.</p>
+              </div>
+            </div>
+
+            <div class="max-w-4xl mx-auto flex-column gap-md">
+              
+              <!-- Section A: Google Gemini API Credentials -->
+              <div class="glass-card pad-lg" id="settings-api-card">
+                <h4 class="card-title font-display border-bottom pad-bottom-xs margin-bottom-sm">
+                  <i data-lucide="key" class="text-accent"></i> Google Gemini API Settings
+                </h4>
+                <p class="settings-guide-text">
+                  A high-speed Google Gemini connection is pre-configured and active automatically. If you wish to use your own personal **Google Gemini API Key** instead, you can save it below.
+                </p>
+                <form id="settings-api-form" class="flex-column gap-sm margin-top-sm" onsubmit="return false;">
+                  <div class="form-group">
+                    <label for="settings-api-key-input" class="form-label">Custom Gemini API Key (Optional)</label>
+                    <div class="password-input-group">
+                      <input type="password" id="settings-api-key-input" class="form-control" placeholder="Optional - using built-in system key" />
+                      <button type="button" class="icon-btn" id="settings-api-key-toggle-visible" aria-label="Toggle password visibility">
+                        <i data-lucide="eye"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex-row-between margin-top-xs">
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="link-btn font-sans text-xs flex-row gap-xs">
+                      Get a Gemini API Key free from AI Studio <i data-lucide="external-link"></i>
+                    </a>
+                    <div class="flex-row gap-xs">
+                      <button class="danger-btn btn-sm" id="settings-api-btn-remove" type="button">Delete Key</button>
+                      <button class="primary-btn btn-sm" id="settings-api-btn-save" type="submit">Save Key</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Section B: Aesthetic Configurations -->
+              <div class="glass-card pad-lg" id="settings-aesthetic-card">
+                <h4 class="card-title font-display border-bottom pad-bottom-xs margin-bottom-sm">
+                  <i data-lucide="palette" class="text-primary-400"></i> Personalization
+                </h4>
+                
+                <div class="grid-2col gap-md margin-top-sm">
+                  
+                  <div class="form-group">
+                    <label for="settings-select-theme" class="form-label">Color Theme Preset</label>
+                    <select id="settings-select-theme" class="form-control">
+                      <option value="theme-dark" selected>Sophisticated Dark (Default)</option>
+                      <option value="theme-midnight">Cosmic Blue (Deep Sapphire)</option>
+                      <option value="theme-dracula">Cyberpunk Neon (Dracula Contrast)</option>
+                      <option value="theme-light">Sleek Light (High Contrast Clean)</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="settings-select-fontsize" class="form-label">Workspace Font Size</label>
+                    <select id="settings-select-fontsize" class="form-control">
+                      <option value="fs-small">Compact (Small)</option>
+                      <option value="fs-medium" selected>Standard (Medium)</option>
+                      <option value="fs-large">Accessible (Large)</option>
+                    </select>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Section C: Storage Backup & Recovery -->
+              <div class="glass-card pad-lg" id="settings-storage-card">
+                <h4 class="card-title font-display border-bottom pad-bottom-xs margin-bottom-sm">
+                  <i data-lucide="hard-drive" class="text-cyan"></i> Data Management
+                </h4>
+                <p class="settings-guide-text">
+                  Take a physical backup of your flashcards, planners, completed quizzes, and customized study settings. You can import your backup files back to restore sessions anytime.
+                </p>
+                <div class="flex-row gap-sm margin-top-md">
+                  <button class="secondary-btn btn-sm" id="settings-btn-backup-export">
+                    <i data-lucide="download"></i> Export Data Backup (.json)
+                  </button>
+                  <label class="secondary-btn btn-sm cursor-pointer" for="settings-backup-file-uploader">
+                    <i data-lucide="upload"></i> Import Data Backup
+                  </label>
+                  <input type="file" id="settings-backup-file-uploader" accept=".json" class="hidden" />
+                  <button class="danger-btn btn-sm margin-left-auto" id="settings-btn-hard-reset">
+                    <i data-lucide="alert-triangle"></i> Clear All Study Data
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+        </div>
+      </main>
+
+    </div>
+
+    <!-- Live Ambient Popup Toast Container -->
+    <div class="toast-outer-container" id="toast-wrapper">
+      <!-- Toasts inserted dynamically by script.js -->
+    </div>
+
+    <!-- Main Client Application Scripts -->
+    <script type="module" src="./api.js"></script>
+    <script type="module" src="./pdf.js"></script>
+    <script type="module" src="./script.js"></script>
+  </body>
+</html>
