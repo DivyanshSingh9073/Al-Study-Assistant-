@@ -1,0 +1,6 @@
+{
+  "name": "AI Study Assistant",
+  "description": "A comprehensive, production-quality study suite featuring AI Chat, Topic Explanation, Quiz Generation, Notes/PDF Summarization, Flashcards, Study Planner, and a Pomodoro Timer, wrapped in a modern glassmorphic dark theme.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
